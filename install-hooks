@@ -1,0 +1,30 @@
+#!/bin/sh
+# Install custom git hooks from .githook/ into this repo
+
+HOOKS_DIR=".githook"
+
+# Check for git repo
+if [ ! -d ".git" ]; then
+  echo "ℹ️ Skipping hook installation (no .git directory found)"
+  exit 0
+fi
+
+# Check for git command
+if ! command -v git >/dev/null 2>&1; then
+  echo "❌ Git is not installed"
+  exit 1
+fi
+
+# Check hooks dir exists
+if [ ! -d "$HOOKS_DIR" ]; then
+  echo "❌ Hooks directory '$HOOKS_DIR' not found!"
+  exit 1
+fi
+
+# Configure git to use custom hooks dir
+git config core.hooksPath "$HOOKS_DIR"
+
+# Ensure all hooks are executable
+chmod +x "$HOOKS_DIR"/*
+
+echo "✅ Git hooks installed successfully from $HOOKS_DIR"
