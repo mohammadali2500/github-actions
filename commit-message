@@ -1,0 +1,36 @@
+#!/bin/sh
+# Conventional Commits validation hook
+# https://www.conventionalcommits.org/
+
+commit_message_file=$1
+
+# Extract header (first line of commit message)
+header=$(head -n1 "$commit_message_file")
+
+# Regex for header: type(scope)!: description
+header_regex='^(feat|fix|docs|style|refactor|perf|test|chore|build|ci|revert)(\([a-z0-9\-]+\))?!?: [a-z][a-z0-9\- ]*$'
+
+# Regex for footers (BREAKING CHANGE / issue references, etc.)
+footer_regex='^(BREAKING CHANGE: .+|[A-Za-z-]+: .+)$'
+
+# Validate header
+if ! printf "%s" "$header" | grep -Eq "$header_regex"; then
+  echo "❌ Invalid commit message header"
+  echo "👉 Example: feat(auth): add login API"
+  exit 1
+fi
+
+# Validate footers if present (ignore empty lines, body allowed freely)
+while IFS= read -r line; do
+  # skip header
+  [ "$line" = "$header" ] && continue
+  # skip empty lines
+  [ -z "$line" ] && continue
+  # allow body (doesn't need validation) until we see a footer
+  if printf "%s" "$line" | grep -Eq "$footer_regex"; then
+    continue
+  fi
+done < "$commit_message_file"
+
+# ✅ Passed
+exit 0
