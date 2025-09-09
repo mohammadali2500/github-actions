@@ -1,15 +1,15 @@
 #!/bin/sh
-# Install custom Git hooks from .githook/
+# Install custom Git hooks from .githook/ using a loop
 
 HOOKS_DIR=".githook"
 
-# Check for git repo
+# Check if inside a git repo
 if [ ! -d ".git" ]; then
   echo "ℹ️ Skipping hook installation (no .git directory found)"
   exit 0
 fi
 
-# Check for git command
+# Check git command exists
 if ! command -v git >/dev/null 2>&1; then
   echo "❌ Git is not installed"
   exit 1
@@ -21,16 +21,16 @@ if [ ! -d "$HOOKS_DIR" ]; then
   exit 1
 fi
 
-# Configure Git to use custom hooks folder
+# Configure git to use the custom hooks folder
 git config core.hooksPath "$HOOKS_DIR"
 echo "✅ Git hooks path set to $HOOKS_DIR"
 
-# Make all hook scripts executable
-if [ "$(ls -A $HOOKS_DIR)" ]; then
-  chmod +x "$HOOKS_DIR"/*
-  echo "✅ All hook scripts in $HOOKS_DIR are now executable"
-else
-  echo "⚠️ No hook scripts found in $HOOKS_DIR"
-fi
+# Loop over each file in hooks directory
+for hook in "$HOOKS_DIR"/*; do
+  if [ -f "$hook" ]; then
+    chmod +x "$hook"
+    echo "✅ Installed hook: $(basename "$hook")"
+  fi
+done
 
-echo "🎉 Git hooks installed successfully!"
+echo "🎉 All Git hooks installed successfully!"
