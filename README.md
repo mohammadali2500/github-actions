@@ -1,8 +1,24 @@
-# github-actions
+## 🚀 Git Hooks in This Project
 
-## 🚀 Setup Git Hooks
+### Commit Message Validation
+Ensures all commits follow [Conventional Commits](https://www.conventionalcommits.org/).
 
-After cloning the repo, run the following command once:
+### Branch Name Validation
+Ensures branches follow the pattern:
 
-```bash
-./scripts/install-hooks.sh
+- `feature/<task-name>`
+- `bugfix/<task-name>`
+- `hotfix/<task-name>`
+- `release/<version>`
+
+Where `<task-name>` is lowercase with hyphens.
+
+Example:
+- `feature/add-login-api`
+- `bugfix/fix-null-pointer`
+- `release/1.2.0`
+
+Invalid:
+- `Feature/Login` ❌
+- `fix/bug` ❌
+- `hotfix-urgent` ❌
