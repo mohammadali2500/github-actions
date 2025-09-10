@@ -1,0 +1,54 @@
+name: Cleanup Branches
+
+on:
+  schedule:
+    - cron: '0 2 * * 0' # Runs every Sunday at 2 AM UTC
+  workflow_dispatch: # Manual trigger
+
+jobs:
+  cleanup:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # fetch all branches
+
+      - name: Set up Git
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+
+      - name: Fetch all branches
+        run: git fetch --all --prune
+
+      - name: Cleanup branches
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          ENABLE_6_MONTHS_CLEANUP: ${{ vars.ENABLE_6_MONTHS_CLEANUP || 'false' }}
+        run: |
+          DEV_BRANCH="dev"
+          EXCLUDE_BRANCHES="dev|main|release"
+          
+          # Set time thresholds
+          SIX_MONTHS_AGO=$(date -d '6 months ago' +%s)
+          THIRTY_DAYS_AGO=$(date -d '30 days ago' +%s)
+
+          echo "=== Checking all branches ==="
+          all_branches=$(git branch -r | sed 's/origin\///' | grep -Ev "$EXCLUDE_BRANCHES")
+
+          for branch in $all_branches; do
+              last_commit_date=$(git log -1 --format="%ct" origin/$branch)
+              ahead_count=$(git rev-list --count origin/$branch ^origin/$DEV_BRANCH)
+
+              # Check 6 months cleanup only if ENABLE_6_MONTHS_CLEANUP=true
+              if [ "$ENABLE_6_MONTHS_CLEANUP" = "true" ] && [ $last_commit_date -lt $SIX_MONTHS_AGO ]; then
+                  echo "Deleting branch (older than 6 months): $branch"
+                  git push origin --delete $branch
+              elif [ $last_commit_date -lt $THIRTY_DAYS_AGO ] && [ $ahead_count -eq 0 ]; then
+                  echo "Deleting stale branch (not ahead of dev, older than 30 days): $branch"
+                  git push origin --delete $branch
+              else
+                  echo "Skipping branch: $branch"
+              fi
+          done
