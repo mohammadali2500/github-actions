@@ -1,0 +1,49 @@
+name: Branch Validation
+
+on:
+  pull_request:
+    types: [opened, reopened, edited, synchronize, ready_for_review]
+
+jobs:
+  validate-branches:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Validate PR Branch Rules
+        run: |
+          echo "Source branch: ${{ github.head_ref }}"
+          echo "Target branch: ${{ github.base_ref }}"
+
+          # -----------------------
+          # 1. Branch name pattern
+          # -----------------------
+          if [[ ! "${{ github.head_ref }}" =~ ^(feature|bugfix|hotfix|release)\/[A-Z]+-[0-9]+(-[a-z0-9-]+)*$ ]]; then
+            echo "❌ Invalid branch name: ${{ github.head_ref }}"
+            echo "   Must match: feature|bugfix|hotfix|release/JIRA-123-description"
+            exit 1
+          fi
+
+          # -----------------------
+          # 2. Branch flow rules
+          # -----------------------
+
+          # Feature/Bugfix must target develop
+          if [[ "${{ github.head_ref }}" == feature/* || "${{ github.head_ref }}" == bugfix/* ]]; then
+            if [[ "${{ github.base_ref }}" != "develop" ]]; then
+              echo "❌ Feature/Bugfix branches must target develop"
+              exit 1
+            fi
+          fi
+
+          # Hotfix must target main
+          if [[ "${{ github.head_ref }}" == hotfix/* && "${{ github.base_ref }}" != "main" ]]; then
+            echo "❌ Hotfix branches must target main"
+            exit 1
+          fi
+
+          # Release must target main
+          if [[ "${{ github.head_ref }}" == release/* && "${{ github.base_ref }}" != "main" ]]; then
+            echo "❌ Release branches must target main"
+            exit 1
+          fi
+
+          echo "✅ Branch rules passed"
