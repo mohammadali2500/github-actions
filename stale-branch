@@ -1,4 +1,4 @@
-name: Cleanup Branches
+name: stale-branches
 
 on:
   schedule:
@@ -26,29 +26,39 @@ jobs:
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           ENABLE_6_MONTHS_CLEANUP: ${{ vars.ENABLE_6_MONTHS_CLEANUP || 'false' }}
+          SLACK_WEBHOOK_URL: ${{ secrets.SLACK_WEBHOOK_URL }}
         run: |
           DEV_BRANCH="dev"
           EXCLUDE_BRANCHES="dev|main|release"
-          
-          # Set time thresholds
           SIX_MONTHS_AGO=$(date -d '6 months ago' +%s)
           THIRTY_DAYS_AGO=$(date -d '30 days ago' +%s)
 
           echo "=== Checking all branches ==="
           all_branches=$(git branch -r | sed 's/origin\///' | grep -Ev "$EXCLUDE_BRANCHES")
 
+          deleted_branches=""
+
           for branch in $all_branches; do
               last_commit_date=$(git log -1 --format="%ct" origin/$branch)
               ahead_count=$(git rev-list --count origin/$branch ^origin/$DEV_BRANCH)
 
-              # Check 6 months cleanup only if ENABLE_6_MONTHS_CLEANUP=true
               if [ "$ENABLE_6_MONTHS_CLEANUP" = "true" ] && [ $last_commit_date -lt $SIX_MONTHS_AGO ]; then
                   echo "Deleting branch (older than 6 months): $branch"
                   git push origin --delete $branch
+                  deleted_branches="$deleted_branches\n• $branch (older than 6 months)"
               elif [ $last_commit_date -lt $THIRTY_DAYS_AGO ] && [ $ahead_count -eq 0 ]; then
                   echo "Deleting stale branch (not ahead of dev, older than 30 days): $branch"
                   git push origin --delete $branch
+                  deleted_branches="$deleted_branches\n• $branch (stale, not ahead of dev)"
               else
                   echo "Skipping branch: $branch"
               fi
           done
+
+          # Send Slack notification if any branches were deleted
+          if [ -n "$deleted_branches" ]; then
+              payload="{\"text\": \"GitHub Action: Deleted the following branches:\n$deleted_branches\"}"
+              curl -X POST -H 'Content-type: application/json' --data "$payload" $SLACK_WEBHOOK_URL
+          else
+              echo "No branches deleted."
+          fi
