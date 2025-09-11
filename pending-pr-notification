@@ -1,0 +1,82 @@
+name: Daily Old PR Notification
+
+on:
+  schedule:
+    - cron: '0 9 * * *'  # Every day at 9 AM UTC
+
+permissions:
+  pull-requests: read
+  contents: read
+
+jobs:
+  old-pr-notification:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install dependencies
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y jq curl coreutils
+
+      - name: Get open PRs older than 1 week
+        id: old_prs
+        run: |
+          echo "Fetching open PRs older than 7 days..."
+
+          # Fetch all open PRs with metadata
+          PRS_JSON=$(gh pr list --state open --json number,title,url,author,createdAt,baseRefName,headRefName --limit 100)
+
+          # Filter PRs older than 7 days
+          OLD_PRS=$(echo "$PRS_JSON" | jq -c '
+            .[] | select((.createdAt | fromdateiso8601) < (now - 604800))
+          ')
+
+          # Function to assign emoji based on branch type
+          function emoji() {
+            case "$1" in
+              feature/*) echo "🟢" ;;
+              bugfix/*) echo "🟡" ;;
+              release/*) echo "🔵" ;;
+              hotfix/*) echo "🔴" ;;
+              chore/*) echo "⚪" ;;
+              docs/*) echo "⚪" ;;
+              *) echo "⚪" ;;
+            esac
+          }
+
+          # Build grouped + sorted message
+          MESSAGE=""
+          for branch in $(echo "$OLD_PRS" | jq -r '.baseRefName' | sort -u); do
+            MESSAGE="$MESSAGE\n*${branch}*:\n"
+            echo "$OLD_PRS" | jq -c --arg branch "$branch" '
+              select(.baseRefName == $branch)
+            ' | jq -s 'sort_by(.number)' | jq -c '.[]' | while read -r pr_json; do
+              PR_BRANCH=$(echo $pr_json | jq -r '.headRefName')
+              PR_NUM=$(echo $pr_json | jq -r '.number')
+              PR_TITLE=$(echo $pr_json | jq -r '.title')
+              PR_AUTHOR=$(echo $pr_json | jq -r '.author.login')
+              PR_URL=$(echo $pr_json | jq -r '.url')
+              PR_DATE=$(echo $pr_json | jq -r '.createdAt')
+
+              # Calculate relative age (days ago)
+              CREATED_TS=$(date -d "$PR_DATE" +%s)
+              NOW_TS=$(date +%s)
+              AGE_DAYS=$(( (NOW_TS - CREATED_TS) / 86400 ))
+
+              EMOJI=$(emoji $PR_BRANCH)
+              MESSAGE="$MESSAGE• $EMOJI PR #$PR_NUM: $PR_TITLE (by @$PR_AUTHOR, opened ${AGE_DAYS} days ago) → $PR_URL\n"
+            done
+          done
+
+          echo "message<<EOF" >> $GITHUB_OUTPUT
+          echo -e "$MESSAGE" >> $GITHUB_OUTPUT
+          echo "EOF" >> $GITHUB_OUTPUT
+
+      - name: Send Slack Notification
+        if: steps.old_prs.outputs.message != ''
+        uses: ./.github/workflows/reusable-slack-notification.yml
+        with:
+          message: "${{ steps.old_prs.outputs.message }}"
