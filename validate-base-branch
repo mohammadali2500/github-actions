@@ -1,21 +1,33 @@
-name: Branch Validation
+name: Validate Base Branch
 
 on:
-  pull_request:
-    types: [opened, reopened, synchronize, ready_for_review]
+  workflow_call:
+    inputs:
+      pr_number:
+        required: true
+        type: number
+      pr_source_branch:
+        required: true
+        type: string
+      pr_base_branch:
+        required: true
+        type: string
+      pr_is_draft:
+        required: true
+        type: boolean
 
 jobs:
   validate-base-branch:
     runs-on: ubuntu-latest
-    if: ${{ github.event.pull_request.draft == false }} # skip draft PRs
+    if: ${{ inputs.pr_is_draft == false }}
     steps:
-      - name: Check PR source and base branch
+      - name: Check PR base branch
         run: |
-          echo "Source branch: ${{ github.head_ref }}"
-          echo "Base branch: ${{ github.base_ref }}"
+          SOURCE="${{ inputs.pr_source_branch }}"
+          BASE="${{ inputs.pr_base_branch }}"
 
-          SOURCE="${{ github.head_ref }}"
-          BASE="${{ github.base_ref }}"
+          echo "Source branch: $SOURCE"
+          echo "Base branch: $BASE"
 
           # Feature, chore, docs → dev
           if [[ "$SOURCE" =~ ^(feature|chore|docs)/ ]] && [[ "$BASE" != "develop" ]]; then
@@ -29,8 +41,8 @@ jobs:
             exit 1
           fi
 
-          # Bugfix → release
-          if [[ "$SOURCE" =~ ^bugfix/ ]] && [[ "$BASE" != release/* ]]; then
+          # Bugfix → release/*
+          if [[ "$SOURCE" =~ ^bugfix/ ]] && [[ ! "$BASE" =~ ^release/ ]]; then
             echo "❌ $SOURCE must target a release branch"
             exit 1
           fi
