@@ -1,0 +1,44 @@
+name: Branch Validation
+
+on:
+  pull_request:
+    types: [opened, reopened, synchronize, ready_for_review]
+
+jobs:
+  validate-base-branch:
+    runs-on: ubuntu-latest
+    if: ${{ github.event.pull_request.draft == false }} # skip draft PRs
+    steps:
+      - name: Check PR source and base branch
+        run: |
+          echo "Source branch: ${{ github.head_ref }}"
+          echo "Base branch: ${{ github.base_ref }}"
+
+          SOURCE="${{ github.head_ref }}"
+          BASE="${{ github.base_ref }}"
+
+          # Feature, chore, docs → dev
+          if [[ "$SOURCE" =~ ^(feature|chore|docs)/ ]] && [[ "$BASE" != "develop" ]]; then
+            echo "❌ $SOURCE must target 'develop' branch"
+            exit 1
+          fi
+
+          # Release → main or develop
+          if [[ "$SOURCE" =~ ^release/ ]] && [[ "$BASE" != "main" && "$BASE" != "develop" ]]; then
+            echo "❌ $SOURCE must target 'main' or 'develop'"
+            exit 1
+          fi
+
+          # Bugfix → release
+          if [[ "$SOURCE" =~ ^bugfix/ ]] && [[ "$BASE" != release/* ]]; then
+            echo "❌ $SOURCE must target a release branch"
+            exit 1
+          fi
+
+          # Hotfix → main
+          if [[ "$SOURCE" =~ ^hotfix/ ]] && [[ "$BASE" != "main" ]]; then
+            echo "❌ $SOURCE must target 'main' branch"
+            exit 1
+          fi
+
+          echo "✅ PR base branch is valid"
