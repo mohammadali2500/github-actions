@@ -1,0 +1,43 @@
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        include:
+          - env: dev
+            branch_pattern: 'refs/heads/develop'
+            needs: ''
+            param1: dev_value1
+            param2: dev_value2
+            param3: ""
+          - env: qa
+            branch_pattern: 'refs/heads/feature/'
+            needs: deploy
+            param1: qa_value1
+            param2: qa_value2
+            param3: qa_value3
+          - env: prod
+            branch_pattern: 'refs/heads/release/'
+            needs: deploy
+            param1: prod_value1
+            param2: ""
+            param3: ""
+          - env: prod
+            branch_pattern: 'refs/heads/hotfix/'
+            needs: deploy
+            param1: hotfix_value1
+            param2: hotfix_value2
+            param3: hotfix_value3
+    environment: ${{ matrix.env }}
+    if: startsWith(github.ref, matrix.branch_pattern)
+    needs: ${{ matrix.needs }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Deploy to ${{ matrix.env }}
+        uses: ./.github/workflows/deploy.yml
+        with:
+          param1: ${{ matrix.param1 }}
+          param2: ${{ matrix.param2 }}
+          param3: ${{ matrix.param3 }}
