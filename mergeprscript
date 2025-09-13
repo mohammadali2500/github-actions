@@ -1,0 +1,81 @@
+name: Auto Merge PR with Approvals and Branch Deletion
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+jobs:
+  auto-merge:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v3
+
+      - name: Auto merge PR after approvals
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+            const prNumber = pr.number;
+            const headBranch = pr.head.ref;
+            const baseBranch = pr.base.ref;
+            const owner = context.repo.owner;
+            const repo = context.repo.repo;
+
+            // Step 1: Get all reviews for the PR
+            const { data: reviews } = await github.rest.pulls.listReviews({
+              owner,
+              repo,
+              pull_number: prNumber
+            });
+
+            // Count unique approvals
+            const approvedReviewers = new Set(
+              reviews
+                .filter(r => r.state === 'APPROVED')
+                .map(r => r.user.login)
+            );
+
+            const requiredApprovals = 2;
+
+            if (approvedReviewers.size < requiredApprovals) {
+              console.log(`⚠️ PR #${prNumber} has only ${approvedReviewers.size} approvals. Required: ${requiredApprovals}. Skipping merge.`);
+              return;
+            }
+
+            // Step 2: Choose merge method based on branch name
+            let mergeMethod = 'merge';
+            if (headBranch.startsWith('feature/') || headBranch.startsWith('bugfix/')) {
+              mergeMethod = 'squash';
+            }
+
+            // Step 3: Merge the PR
+            try {
+              await github.rest.pulls.merge({
+                owner,
+                repo,
+                pull_number: prNumber,
+                merge_method: mergeMethod
+              });
+              console.log(`✅ PR #${prNumber} merged using '${mergeMethod}' method.`);
+            } catch (error) {
+              console.log(`❌ Failed to merge PR #${prNumber}: ${error.message}`);
+              return;
+            }
+
+            // Step 4: Delete source branch if not protected
+            const protectedBranches = ['main', 'develop', 'release'];
+            if (!protectedBranches.includes(headBranch)) {
+              try {
+                await github.rest.git.deleteRef({
+                  owner,
+                  repo,
+                  ref: `heads/${headBranch}`
+                });
+                console.log(`🗑️ Deleted branch ${headBranch} after merge.`);
+              } catch (error) {
+                console.log(`⚠️ Failed to delete branch ${headBranch}: ${error.message}`);
+              }
+            } else {
+              console.log(`Branch ${headBranch} is protected. Skipping deletion.`);
+            }
