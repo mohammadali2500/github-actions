@@ -1,0 +1,5 @@
+.github/
+  workflows/
+    auto-merge.yml
+  scripts/
+    auto-merge.js
