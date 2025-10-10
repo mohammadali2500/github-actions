@@ -1,0 +1,14 @@
+<dependency>
+  <groupId>nz.net.ultraq.thymeleaf</groupId>
+  <artifactId>thymeleaf-layout-dialect</artifactId>
+</dependency>
+
+@GetMapping("/email-preview/welcome")
+public String previewWelcomeEmail() {
+    Context context = new Context();
+    context.setVariable("name", "Test User");
+    context.setVariable("link", "https://example.com/get-started");
+    context.setVariable("subject", "Welcome Email");
+    return templateEngine.process("email/welcome-email", context);
+}
+
