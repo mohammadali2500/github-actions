@@ -1,0 +1,22 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{email/base-email}">
+  <head>
+    <title>Welcome!</title>
+  </head>
+
+  <body>
+    <div layout:fragment="content">
+      <h3>Hello, <span th:text="${name}">User</span>!</h3>
+      <p>Welcome to our platform 🎉</p>
+      <p>
+        To get started, click the button below:
+      </p>
+      <p>
+        <a class="button" th:href="${link}">Get Started</a>
+      </p>
+      <p>If you didn’t request this, you can safely ignore this email.</p>
+    </div>
+  </body>
+</html>
