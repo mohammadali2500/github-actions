@@ -1,0 +1,69 @@
+name: Auto Semantic Squash Merge
+
+on:
+  pull_request_review:
+    types: [submitted]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  semantic-merge:
+    if: |
+      github.event.review.state == 'approved' &&
+      github.event.pull_request.mergeable_state == 'clean'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Determine semantic commit type
+        id: semantic
+        uses: actions/github-script@v7
+        with:
+          script: |
+            const pr = context.payload.pull_request;
+
+            const commits = await github.rest.pulls.listCommits({
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              pull_number: pr.number
+            });
+
+            const messages = commits.data.map(c => c.commit.message);
+            console.log("Commit messages:", messages);
+
+            let isBreaking = false;
+            let hasFeat = false;
+            let hasFix = false;
+
+            for (const msg of messages) {
+              if (/BREAKING CHANGE/i.test(msg) || /^(\w+)!:/i.test(msg)) isBreaking = true;
+              if (/^feat(\(.+\))?:/i.test(msg)) hasFeat = true;
+              if (/^fix(\(.+\))?:/i.test(msg)) hasFix = true;
+            }
+
+            let type = 'chore';
+            if (isBreaking) type = hasFix ? 'fix!' : 'feat!';
+            else if (hasFeat) type = 'feat';
+            else if (hasFix) type = 'fix';
+
+            // Optional: extract scope from PR title or branch name
+            const scope = pr.head.ref.split('/')[1] || '';
+            const cleanScope = scope ? `(${scope})` : '';
+
+            const title = `${type}${cleanScope}: ${pr.title}`;
+            core.setOutput('title', title);
+
+            console.log("✅ Semantic squash title:", title);
+
+      - name: Perform squash merge
+        uses: peter-evans/merge-pull-request@v3
+        with:
+          token: ${{ secrets.PAT }}
+          merge_method: squash
+          commit_title: ${{ steps.semantic.outputs.title }}
+          commit_message: |
+            Auto-merged PR #${{ github.event.pull_request.number }}
+
+            ${{ github.event.pull_request.body }}
+          delete_branch: true
