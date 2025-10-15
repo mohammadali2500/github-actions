@@ -1,0 +1,29 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout">
+  <head>
+    <meta charset="UTF-8" />
+    <title th:text="${subject}">Job Status Notification</title>
+  </head>
+  <body style="font-family: Arial, sans-serif; background-color:#f4f4f4; color:#333; margin:0; padding:20px;">
+    <div style="max-width:600px; margin:0 auto; background-color:#fff; border-radius:8px; overflow:hidden; box-shadow:0 1px 3px rgba(0,0,0,0.1);">
+      
+      <!-- Company Header -->
+      <div style="background-color:#004aad; color:#fff; padding:16px; text-align:center;">
+        <h2 style="margin:0;">[[${T(com.example.constants.EmailConstants).COMPANY_NAME}]]</h2>
+      </div>
+
+      <!-- Main Email Content -->
+      <div style="padding:20px;" layout:fragment="content">
+        <p>This is default content.</p>
+      </div>
+
+      <!-- Footer -->
+      <div style="background-color:#f8f8f8; color:#777; padding:10px 20px; font-size:12px; text-align:center;">
+        <p>© [[${T(com.example.constants.EmailConstants).COMPANY_NAME}]] 2025</p>
+        <p>This is an automated message. Please do not reply.</p>
+      </div>
+
+    </div>
+  </body>
+</html>
