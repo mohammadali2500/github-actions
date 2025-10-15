@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html xmlns:th="http://www.thymeleaf.org"
+      xmlns:layout="http://www.ultraq.net.nz/thymeleaf/layout"
+      layout:decorate="~{email/base-email}">
+  <body>
+    <div layout:fragment="content">
+
+      <div th:replace="email/fragments/status-banner :: statusBanner(${status}, ${jobName}, ${message}, ${timestamp})"></div>
+
+      <p>Job ID: <strong>[[${jobId}]]</strong></p>
+      <p>Executed by: [[${executedBy}]]</p>
+
+      <div th:if="${status == 'FAILURE'}">
+        <p>Please review the job logs for details.</p>
+      </div>
+
+      <div th:if="${status == 'SUCCESS'}">
+        <p>You can view the generated report <a th:href="${reportLink}" style="color:#004aad;">here</a>.</p>
+      </div>
+
+    </div>
+  </body>
+</html>
