@@ -1,0 +1,156 @@
+# Contributing Guide
+
+Thank you for contributing 🚀
+
+This project uses an automated Pull Request workflow to reduce review noise and ensure consistent quality.
+
+The goal is simple:
+👉 Developers own PR readiness  
+👉 Automation handles PR state  
+👉 Reviewers focus only on code quality  
+
+---
+
+# 🧠 PR Workflow Overview
+
+We use an automated PR state system powered by CI and GitHub Actions.
+
+The workflow is:
+
+1. Open Draft PR
+2. CI runs automatically
+3. Developer marks PR as Ready for Review
+4. Review happens
+5. Fixes + Re-review if needed
+6. Approval → Auto-merge
+
+---
+
+# 🔁 Detailed Flow
+
+## 1. Open a Draft PR
+- Always start with a **Draft PR**
+- This indicates work in progress
+
+---
+
+## 2. CI Runs Automatically
+CI will:
+- build the code
+- run tests
+- validate checks
+
+### If CI fails:
+- Fix the issues
+- Push updates
+- CI will rerun automatically
+
+👉 Do NOT request review while CI is failing
+
+---
+
+## 3. Mark PR as Ready for Review
+Once:
+- CI is passing (green)
+- Code is complete and self-reviewed
+
+👉 Click **“Ready for review”**
+
+This is an important manual step.
+
+It tells reviewers:
+> “This PR is ready to be reviewed”
+
+---
+
+## 4. Review Process
+Once marked ready:
+- Reviewers will review the code
+- They may leave comments or request changes
+
+---
+
+## 5. Address Review Comments
+If changes are requested:
+- Update the code
+- Push changes
+- Resolve all comments
+
+---
+
+## 6. Re-request Review
+After making changes:
+
+👉 Click **“Re-request review”**
+
+This notifies reviewers that the PR is ready again.
+
+---
+
+## 7. Approval & Merge
+Once:
+- CI is passing
+- No unresolved comments
+- Reviewer has approved the PR
+
+👉 The PR will be automatically merged
+
+---
+
+# 🏷 PR Labels (Automated)
+
+These labels are managed automatically by the system:
+
+| Label | Meaning |
+|------|--------|
+| `needs-ci` | CI failing, PR not ready |
+| `changes-requested` | Reviewer feedback pending |
+| `ready-for-review` | PR ready for review |
+| `approved` | PR ready for auto-merge |
+
+👉 Do not modify labels manually.
+
+---
+
+# 🚫 Developer Responsibilities
+
+As a contributor, you MUST:
+
+- ✅ Open PRs as Draft
+- ✅ Ensure CI passes before requesting review
+- ✅ Mark PR as “Ready for review” manually
+- ✅ Respond to all review comments
+- ✅ Mark comments as resolved after fixing
+- ✅ Re-request review after changes
+
+---
+
+# ❌ Do NOT
+
+- ❌ Request review before CI passes
+- ❌ Leave review comments unresolved
+- ❌ Push changes without re-requesting review
+- ❌ Try to merge manually when auto-merge is enabled
+- ❌ Ignore CI failures
+
+---
+
+# 🧠 Key Principle
+
+> CI validates code correctness  
+> Automation manages PR state  
+> Developers control readiness  
+> Reviewers validate quality  
+
+---
+
+# 🚀 Summary
+
+This system ensures:
+
+- Faster reviews
+- Less back-and-forth
+- Clear PR states at all times
+- No wasted reviewer effort
+
+Thank you for following the process 🙌
